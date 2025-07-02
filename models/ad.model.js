@@ -47,7 +47,7 @@ class AdModel {
                     .insert([
                         {
                             id: uuidv4(),
-                            annonce_id: adId,
+                            ad_Id: adId,
                             url: publicUrl,
                             uploaded_at: new Date().toISOString()
                         }

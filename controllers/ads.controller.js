@@ -1,4 +1,5 @@
 const createAd = async (req, res) => {
+    console.log(req.body,req.files);
     const adModel = req.models.adModel; 
     const userId = req.user.id;
     const { title, description, price, location, category_id } = req.body;
