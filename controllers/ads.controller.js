@@ -5,15 +5,21 @@ const createAd = async (req, res) => {
     const { title, description, price, location, category_id } = req.body;
     const images = req.files;
 
+    console.log('req.user.id:', userId); 
+    console.log('req.body:', req.body); 
+    console.log('req.files:', images); 
+
     if (!title || !description || !price || !location || !category_id) {
+        console.log('Validation échouée: Champs obligatoires manquants.');
         return res.status(400).json({ message: 'Tous les champs obligatoires (titre, description, prix, localité, catégorie) doivent être fournis.' });
     }
 
     try {
+        console.log('Tentative d\'appel à adModel.createAd.');
         const newAdData = await adModel.createAd({
             title, description, price, location, user_id: userId, category_id
         }, images); 
-
+        console.log('Annonce créée avec succès via le modèle.');
         res.status(201).json({ message: 'Annonce créée avec succès.', ad: newAdData.ad, imageUrls: newAdData.imageUrls });
 
     } catch (err) {

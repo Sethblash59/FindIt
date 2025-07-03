@@ -66,7 +66,7 @@ class AdModel {
             .from('ads')
             .select(`
                 *,
-                users (id, nickname, localité, téléphone),
+                users (id, nickname, location, phone),
                 images (id, url)
             `);
         if (error) throw error;
@@ -78,7 +78,7 @@ class AdModel {
             .from('ads')
             .select(`
                 *,
-                users (id, nickname, localité, téléphone),
+                users (id, nickname, location, phone),
                 images (id, url)
             `)
             .eq('id', id)

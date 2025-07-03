@@ -8,6 +8,10 @@ const register = async (req, res) => {
 
     try {
         const result = await authModel.register(email, password, nickname);
+
+        console.log(`Compte utilisateur créé avec succès : ${result.user.email} (ID: ${result.user.id})`);
+
+
         return res.status(201).json({
             success: true,
             message: 'Inscription réussie. Un email de confirmation pourrait vous être envoyé si activé dans Supabase.',
@@ -31,6 +35,9 @@ const login = async (req, res) => {
 
     try {
         const result = await authModel.login(email, password);
+        
+        console.log(`Utilisateur connecté avec succès : ${result.user.email} (ID: ${result.user.id})`);
+
         return res.status(200).json({
             success: true,
             message: 'Connexion réussie.',
