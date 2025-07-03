@@ -99,8 +99,8 @@ class AdModel {
         return data[0];
     }
 
-    async deleteAd(adId, userId) {
-        // 1. Récupérer les images liées à l'annonce pour les supprimer
+     async deleteAd(adId, userId) {
+        // 1. Récupérer l'annonce et ses images pour vérifier la propriété et obtenir les URLs des images
         const { data: existingAd, error: fetchError } = await this.supabase
             .from('ads')
             .select(`
@@ -110,26 +110,52 @@ class AdModel {
             .eq('id', adId)
             .single();
 
-        if (fetchError || !existingAd || existingAd.user_id !== userId) {
-            throw new Error("Annonce non trouvée ou non autorisée.");
+            // L'annonce n'existe pas ou il y a une erreur de récupération
+        if (fetchError || !existingAd) {
+            throw new Error("Annonce non trouvée.");
         }
 
-        // Supprimer les images du Storage
+        // L'utilisateur n'est pas le propriétaire
+        if (existingAd.user_id !== userId) {
+            throw new Error("Vous n'êtes pas autorisé à supprimer cette annonce.");
+        }
+
+        // 2. Supprimer les images associées de Supabase Storage et de la table 'images'
         if (existingAd.images && existingAd.images.length > 0) {
-            const imagePathsToDelete = existingAd.images.map(img => img.url.split('public/annonces-images/')[1]);
+            const imagePathsToDelete = existingAd.images.map(img => {
+                const parts = img.url.split('public/annonces-images/');
+                return parts.length > 1 ? parts[1] : null; 
+            }).filter(path => path !== null); 
+
             const imageIdsToDelete = existingAd.images.map(img => img.id);
 
-            await this.supabase.storage
-                .from('annonces-images')
-                .remove(imagePathsToDelete);
+            // Supprimer des fichiers du Storage
+            if (imagePathsToDelete.length > 0) {
+                const { error: storageDeleteError } = await this.supabase.storage
+                    .from('annonces-images')
+                    .remove(imagePathsToDelete);
 
-            await this.supabase
-                .from('images')
-                .delete()
-                .in('id', imageIdsToDelete);
+                if (storageDeleteError) {
+                    console.error("Erreur lors de la suppression des images du Storage:", storageDeleteError);
+
+                }
+            }
+
+            // Supprimer les entrées des images de la table 'images'
+            if (imageIdsToDelete.length > 0) {
+                const { error: dbDeleteError } = await this.supabase
+                    .from('images')
+                    .delete()
+                    .in('id', imageIdsToDelete);
+
+                if (dbDeleteError) {
+                    console.error("Erreur lors de la suppression des entrées d'images de la DB:", dbDeleteError);
+
+                }
+            }
         }
 
-        // Supprimer l'annonce principale
+        // 3. Supprimer l'annonce principale de la table 'ads'
         const { error: adDeleteError } = await this.supabase
             .from('ads')
             .delete()
@@ -137,9 +163,10 @@ class AdModel {
             .eq('user_id', userId);
 
         if (adDeleteError) {
-            throw adDeleteError;
+            console.error("Erreur Supabase lors de la suppression de l'annonce:", adDeleteError);
+            throw adDeleteError; 
         }
-        return true;
+        return true; 
     }
 }
 
